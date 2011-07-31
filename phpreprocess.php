@@ -12,17 +12,8 @@
 
 require_once(__DIR__ . '/libs/stdlib.class.php');
 require_once(__DIR__ . '/libs/preprocessor.class.php');
-
-// load configuration file
-$info     = posix_getpwuid(posix_getuid());
-$cfg_file = $info['dir'] . '/.phpreprocess.ini';
-$cfg      = array();
-
-if (is_file($cfg_file) && is_readable($cfg_file)) {
-    $cfg = parse_ini_file($cfg_file, true);
-}
-
-print_r($cfg);
+require_once(__DIR__ . '/libs/plugin.class.php');
+require_once(__DIR__ . '/libs/pipe.class.php');
 
 // parse command-line arguments
 $missing = array();
@@ -43,6 +34,27 @@ if ($options['i'] == '-') {
     $inp = $options['i'];
 }
 
+$params = array();
+$tmp    = (isset($options['p'])
+            ? (!is_array($options['p'])
+                ? array($options['p'])
+                : $options['p'])
+            : array());
+
+array_walk($tmp, function(&$v) use (&$params) {
+    if (preg_match('/^(?P<plugin>[a-z]+)\.(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
+        extract($m);
+        
+        if (!isset($params[$plugin])) $params[$plugin] = array();
+        
+        $params[$plugin][$name] = $value;
+    }
+});
+
 // setup and process document
+$info = posix_getpwuid(posix_getuid());
+preprocessor::addPluginPath($info['dir'] . '/.phpreprocess');
+preprocessor::setPluginDefaults($params);
+
 $p = new preprocessor();
 $p->process($inp);
