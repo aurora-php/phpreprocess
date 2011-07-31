@@ -13,16 +13,17 @@ class preprocessor
     /**
      * Parser tokens.
      * 
-     * @octdoc  d:preprocessor/T_START, T_COMMAND, T_IDENTIFIER, T_STRING, T_ASSIGNMENT,T_SEPARATOR, T_WHITESPACE, T_END
+     * @octdoc  d:preprocessor/T_START, T_COMMAND, T_IDENTIFIER, T_STRING, T_VARIABLE, T_ASSIGNMENT,T_SEPARATOR, T_WHITESPACE, T_END
      */
     const T_START      = 0;
     const T_COMMAND    = 1;
     const T_IDENTIFIER = 2;
     const T_STRING     = 3;
-    const T_ASSIGNMENT = 4;
-    const T_SEPARATOR  = 5;
-    const T_WHITESPACE = 6;
-    const T_END        = 7;
+    const T_VARIABLE   = 4;
+    const T_ASSIGNMENT = 5;
+    const T_SEPARATOR  = 6;
+    const T_WHITESPACE = 7;
+    const T_END        = 8;
     /**/
     
     /**
@@ -36,10 +37,11 @@ class preprocessor
         self::T_COMMAND    => '[a-z]+\(',
         self::T_IDENTIFIER => '-[a-z]+',
         self::T_STRING     => "([\"']).*?(?!\\\\)\\2",
+        self::T_VARIABLE   => '$[a-z_0-9]+',
         self::T_ASSIGNMENT => '=>',
         self::T_SEPARATOR  => '\,',
         self::T_WHITESPACE => '\s+',
-        self::T_END        => '\)[\}\{]'
+        self::T_END        => "\)(\}|\{\s*$)"
     );
     /**/
    
@@ -52,21 +54,49 @@ class preprocessor
     protected static $rules = array(
         null               => array(self::T_START),
         self::T_START      => array(self::T_COMMAND),
-        self::T_COMMAND    => array(self::T_IDENTIFIER, self::T_STRING),
+        self::T_COMMAND    => array(self::T_IDENTIFIER, self::T_END),
         self::T_IDENTIFIER => array(self::T_ASSIGNMENT),
-        self::T_ASSIGNMENT => array(self::T_STRING),
+        self::T_ASSIGNMENT => array(self::T_STRING, self::T_VARIABLE),
         self::T_STRING     => array(self::T_SEPARATOR, self::T_END),
-        self::T_SEPARATOR  => array(self::T_STRING, self::T_ASSIGNMENT)
+        self::T_VARIABLE   => array(self::T_SEPARATOR, self::T_END),
+        self::T_SEPARATOR  => array(self::T_IDENTIFIER)
     );
     /**/
     
     /**
-     * Registered commands.
+     * Autoloader pathes.
      *
-     * @octdoc  v:preprocessor/$commands
+     * @octdoc  v:preprocessor/$pathes
      * @var     array
      */
-    protected $commands = array();
+    private static $pathes = array();
+    /**/
+    
+    /**
+     * Loaded plugins.
+     *
+     * @octdoc  v:preprocessor/$loaded
+     * @var     array
+     */
+    private static $loaded = array();
+    /**/
+    
+    /**
+     * Plugin defaults.
+     *
+     * @octdoc  v:preprocessor/$defaults
+     * @var     array
+     */
+    private static $defaults = array();
+    /**/
+    
+    /**
+     * Defined variables.
+     *
+     * @octdoc  v:preprocessor/$variables
+     * @var     array
+     */
+    protected $variables = array();
     /**/
     
     /**
@@ -77,52 +107,110 @@ class preprocessor
     public function __construct()
     /**/
     {
-        $this->commands['include'] = array($this, '_include');
-        $this->commands['date']    = function($format) { return strftime($format); };
     }
     
     /**
-     * Register a command for preprocessor.
+     * Add a path for plugins.
      *
-     * @octdoc  m:preprocessor/registerCommand
-     * @param   string      $name               Name of command to register.
-     * @param   callback    $cb                 Callback to execute for command.
+     * @octdoc  m:preprocessor/addPluginPath
+     * @param   string      $pathname           Name of path to add.
      */
-    public function registerCommand($name, $cb)
+    public static function addPluginPath($pathname)
     /**/
     {
-        $this->commands[$name] = $cb;
+        if (is_dir($pathname) && is_readable($pathname)) {
+            self::$pathes[] = $pathname;
+        }
+    }
+    
+    /**
+     * Set default parameters for plugins.
+     *
+     * @octdoc  m:preprocessor/setPluginDefaults
+     * @param   array       $defaults           Array with default settings.
+     */
+    public static function setPluginDefaults(array $defaults)
+    /**/
+    {
+        self::$defaults = $defaults;
+    }
+    
+    /**
+     * Set a variable to a specified value.
+     *
+     * @octdoc  m:preprocessor/setVar
+     * @param   string      $name               Name of variable to set.
+     * @param   mixed       $value              Value to set for variable.
+     */
+    public function setVar($name, $value)
+    /**/
+    {
+        $this->variables[$name] = $value;
+    }
+    
+    /**
+     * Return instance of a plugin.
+     *
+     * @octdoc  m:preprocessor/getPlugin
+     * @param   string      $name               Name of plugin.
+     * @return  plugin|bool                     Plugin instance or false in case of an error.
+     */
+    protected function getPlugin($name)
+    /**/
+    {
+        if (!($found = isset(self::$loaded[$name]))) {
+            foreach (self::$pathes as $path) {
+                $file = $path . '/' . $name . '.class.php';
+
+                if (($found = (is_file($file) && is_readable($file)))) {
+                    require_once($file);
+
+                    self::$loaded[$name] = true;
+                
+                    break;
+                }
+            }
+        }
+
+        if (!($return = $found)) {
+            $this->error(sprintf('plugin not found "%s"', $name));
+        } else {
+            $return = array(
+                new $name(
+                    $this, 
+                    (isset(self::$defaults[$name]) 
+                        ? self::$defaults[$name]
+                        : array())
+                ),
+                $name::getType()
+            );
+        }
+        
+        return $return;
     }
     
     /**
      * Write error message to STDERR
      *
+     * @todo    make protected as soon as PHP5.4 is available (see: registerFilter)
+     *
      * @octdoc  m:preprocessor/error
      * @param   string      $message            Error message to write.
+     * @param   string      $name               Name of file the error occured in.
+     * @param   int         $line               Number of line the error occured in.
      */
-    protected function error($message)
+    public function error($message, $name = null, $line = null)
     /**/
     {
-        fwrite(STDERR, $message);
-    }
-    
-    /**
-     * Predefined include function.
-     *
-     * @octdoc  m:preprocessor/_include
-     * @param   string      $name               Name of file to include.
-     * @return  bool|string                     Content of preprocessed file or false in case of an error.
-     */
-    protected function _include($name)
-    /**/
-    {
-        if ($return = (is_file($name) && is_readable($name))) {
-            $return = $this->process($name);
-        } else {
-            $this->error(sprintf("file not found or not readable '%s'\n", $name));
-        }
+        fwrite(STDERR, sprintf("%s\n", $message));
         
-        return $return;
+        if (!is_null($name)) {
+            fwrite(STDERR, sprintf("  in file: %s\n", $name));
+            
+            if (!is_null($line)) {
+                fwrite(STDERR, sprintf("  in line: %d\n", $line));
+            }
+        }
     }
     
     /**
@@ -152,11 +240,7 @@ class preprocessor
                 if (preg_match('/^(' . $pattern . ')/', $snippet, $match)) {
                     if ($token != self::T_WHITESPACE) {
                         if (!in_array($token, self::$rules[$last_token])) {
-                            $this->error(sprintf(
-                                "possible parse error: 'unexpected token' in file '%s', line: %d\n", 
-                                $name, 
-                                $line
-                            ));
+                            $this->error('possible parse error: "unexpected token"', $name, $line);
                         
                             return false;
                         }
@@ -181,6 +265,19 @@ class preprocessor
                             $args[] = substr($match[1], 1, -1);
                         }
                         break;
+                    case self::T_VARIABLE:
+                        $var = substr($match[1], 1);
+                        $val = (array_key_exists($var, $this->variables)
+                                ? $this->variables[$var]
+                                : null);
+                    
+                        if ($key != '') {
+                            $args[$key] = $val;
+                            $key = '';
+                        } else {
+                            $args[] = $val;
+                        }
+                        break;
                     case self::T_END:
                         $block = (substr($match[1], -1) == '{');
                         break 3;
@@ -191,7 +288,7 @@ class preprocessor
                 }                
             }
 
-            $this->error(sprintf("possible parse error in file '%s', line: %d\n", $name, $line));
+            $this->error('possible parse error', $name, $line);
             
             return false;
         }
@@ -229,31 +326,75 @@ class preprocessor
                     // no command, increase offset by one and parse row again to find possible other commands
                     ++$offset;
                     continue;
-                } else {
-                    print "command: $row";
-                    print_r(array($command, $args, $inc, $block));
-                
-                    if (!isset($this->commands[$command]) || !is_callable($this->commands[$command])) {
-                        $this->error(sprintf("unknown command or command not callable '%s'\n", $command));
-                
-                        $return = false;
-                
-                        break 2;
+                } elseif (!list($plugin, $type) = $this->getPlugin($command)) {
+                    // command not registered
+                    $this->error(sprintf("unknown command or command not callable '%s'\n", $command), $input, $line);
+            
+                    $return = false;
+            
+                    break 2;
+                } elseif ($block != ($type == plugin::T_FILTER || $type == plugin::T_CONDITION)) {
+                    // wrong command type
+                    if ($block) {
+                        $this->error('FILTER or CONDITION required', $input, $line);
+                    } else {
+                        $this->error('FUNCTION required', $input, $line);
                     }
                     
-                    if (($cb_return = call_user_func_array($this->commands[$command], $args)) === false) {
-                        $return = false;
+                    $return = false;
+                    
+                    break 2;
+                } elseif ($block) {
+                    // filter or condition command
+                    $block_end = false;
                         
+                    if ($type == plugin::T_CONDITION) {
+                        $tmp = $plugin($args);
+
+                        while (!feof($fp)) {
+                            $row = fgets($fp);
+                            
+                            if (preg_match('/^\}\}$/', trim($row))) {
+                                $row = '';
+                                break;
+                            }
+                            
+                            if ($tmp) fwrite(STDOUT, $row);
+                        }
+                    } elseif (($filter = $plugin($args))) {
+                        while (!feof($fp)) {
+                            $row = fgets($fp);
+                            
+                            if (preg_match('/^\}\}$/', trim($row))) {
+                                $row = '';
+                                break;
+                            }
+                            
+                            if (!$filter->write($row)) {
+                                $this->error('unable to write to filter', $input, $line);
+                                
+                                break;
+                            }
+                        }
+                        
+                        while ($row = $filter->read()) {
+                            fwrite(STDOUT, $row);
+                        }
+                        
+                        unset($filter);
+                    } else {
                         break 2;
                     }
-                
-                    $row = substr_replace($row, $cb_return, $offset, $inc);
+                } else {
+                    // function command
+                    $tmp = $plugin($args);
+                    $row = substr_replace($row, $tmp, $offset, $inc);
 
-                    $offset += strlen($cb_return);
+                    $offset += strlen($tmp);
                 }
             }
             
-            print "$row\n";
+            fwrite(STDOUT, $row);
         }
         
         fclose($fp);
@@ -261,3 +402,6 @@ class preprocessor
         return $return;
     }
 }
+
+// add default plugin path
+preprocessor::addPluginPath(__DIR__ . '/plugins');
