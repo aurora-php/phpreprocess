@@ -40,15 +40,26 @@ abstract class plugin
     /**/
     
     /**
+     * Plugin defaults.
+     *
+     * @octdoc  v:plugin/$defaults
+     * @var     array
+     */
+    protected $defaults = array();
+    /**/
+    
+    /**
      * Constructor.
      *
      * @octdoc  m:command/__construct
-     * @param   preprocessor    $prepro         Preprocessor instance
+     * @param   preprocessor    $prepro         Preprocessor instance.
+     * @param   array           $defaults       Plugin defaults.
      */
-    public function __construct(preprocessor $prepro)
+    public function __construct(preprocessor $prepro, array $defaults)
     /**/
     {
         $this->preprocessor = $prepro;
+        $this->defaults     = $defaults;
     }
     
     /**
