@@ -150,14 +150,18 @@ class preprocessor
         while (strlen($snippet) > 0) {
             foreach (self::$patterns as $token => $pattern) {
                 if (preg_match('/^(' . $pattern . ')/', $snippet, $match)) {
-                    if ($token == self::T_WHITESPACE) {
-                        continue;
-                    }
-                    
-                    if (!in_array($token, self::$rules[$last_token])) {
-                        $this->error(sprintf("possible parse error: 'unexpected token' in file '%s', line: %d\n", $name, $line));
+                    if ($token != self::T_WHITESPACE) {
+                        if (!in_array($token, self::$rules[$last_token])) {
+                            $this->error(sprintf(
+                                "possible parse error: 'unexpected token' in file '%s', line: %d\n", 
+                                $name, 
+                                $line
+                            ));
                         
-                        return false;
+                            return false;
+                        }
+                        
+                        $last_token = $token;
                     }
                     
                     $inc += strlen($match[1]);
@@ -182,8 +186,7 @@ class preprocessor
                         break 3;
                     }
 
-                    $snippet    = substr($snippet, strlen($match[0]));
-                    $last_token = $token;
+                    $snippet = substr($snippet, strlen($match[0]));
                     continue 2;
                 }                
             }
@@ -214,16 +217,17 @@ class preprocessor
         $line   = 0;
 
         while (!feof($fp)) {
-            $row = fgets($fp);
+            $row    = fgets($fp);
+            $offset = 0;
             ++$line;
             
-            $offset  = 0;
-
             while (preg_match('/((?<!\\\\)\{[a-z]+\(.+)/', $row, $m, PREG_OFFSET_CAPTURE, $offset)) {
                 // possibly a preprocessor command
+                $offset = $m[1][1];
+
                 if (!(list($command, $args, $inc, $block) = $this->parse($m[1][0], $fp, $input, $line))) {
-                    // no command, increase offset to find possible other commands in row
-                    $offset = $m[1][1] + 1;
+                    // no command, increase offset by one and parse row again to find possible other commands
+                    ++$offset;
                     continue;
                 } else {
                     print "command: $row";
