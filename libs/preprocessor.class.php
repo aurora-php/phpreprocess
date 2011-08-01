@@ -213,8 +213,6 @@ class preprocessor
     /**
      * Write error message to STDERR
      *
-     * @todo    make protected as soon as PHP5.4 is available (see: registerFilter)
-     *
      * @octdoc  m:preprocessor/error
      * @param   string      $message            Error message to write.
      * @param   string      $name               Name of file the error occured in.
