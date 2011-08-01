@@ -369,25 +369,33 @@ namespace phpreprocess {
                         // filter or condition command
                         $block_end = false;
                         
+                        fwrite(STDOUT, substr($row, 0, $offset));
+
                         if ($type == plugin::T_CONDITION) {
                             $tmp = $plugin($args);
-
-                            while (!feof($fp)) {
+                            
+                            if (!feof($fp)) {
                                 $row = fgets($fp);
-                            
-                                if (preg_match('/^\}\}$/', trim($row))) {
-                                    $row = '';
-                                    break;
-                                }
-                            
-                                if ($tmp) fwrite(STDOUT, $row);
+
+                                do {
+                                    if (!($cont = !feof($fp)) || preg_match('/^\}\}/', ltrim($next = fgets($fp)))) {
+                                        $row  = rtrim($row);
+                                        $next = ($cont ? substr($next, 2) : '');
+                                        $cont = false;
+                                    }
+                                    
+                                    if ($tmp) fwrite(STDOUT, $row);
+                                    $row = $next;
+                                } while ($cont);
                             }
                         } elseif (($filter = $plugin($args))) {
+                            $post = '';
+                            
                             while (!feof($fp)) {
                                 $row = fgets($fp);
                             
-                                if (preg_match('/^\}\}$/', trim($row))) {
-                                    $row = '';
+                                if (preg_match('/^\}\}/', ltrim($row))) {
+                                    $post = substr($row, 2);
                                     break;
                                 }
                             
@@ -397,15 +405,26 @@ namespace phpreprocess {
                                     break;
                                 }
                             }
-                        
-                            while ($row = $filter->read()) {
-                                fwrite(STDOUT, $row);
+                
+                            if (($row = $filter->read())) {
+                                while ($row !== false) {
+                                    if (!($next = $filter->read())) {
+                                        $row = rtrim($row);
+                                    }
+                                    
+                                    fwrite(STDOUT, $row);
+                                    $row = $next;
+                                }
                             }
                         
                             unset($filter);
+                            
+                            $row = $post;
                         } else {
                             break 2;
                         }
+                        
+                        if (preg_match('/^\}\}/', ltrim($row))) $row = substr($row, 3);
                     } else {
                         // function command
                         $tmp = $plugin($args);
