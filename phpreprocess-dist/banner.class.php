@@ -21,37 +21,39 @@
  * https://github.com/aurora/phpreprocess
  */
  
-/**
- * Banner plugin for phpreprocess.
- *
- * @octdoc      c:plugin/banner
- * @copyright   copyright (c) 2011 by Harald Lapp
- * @author      Harald Lapp <harald@octris.org>
- */
-class banner extends plugin
-/**/
-{
+namespace phpreprocess {
     /**
-     * Plugin type.
+     * Banner plugin for phpreprocess.
      *
-     * @octdoc  v:banner/$type
-     * @var     int
+     * @octdoc      c:plugin/banner
+     * @copyright   copyright (c) 2011 by Harald Lapp
+     * @author      Harald Lapp <harald@octris.org>
      */
-    protected static $type = self::T_FILTER;
-    /**/
-
-    /**
-     * Call object instance as function.
-     *
-     * @octdoc  m:banner/__invoke
-     * @param   array           $args               Arguments.
-     * @return  pipe                                Instance of a pipe.
-     */
-    public function __invoke(array $args)
+    class banner extends plugin
     /**/
     {
-        $pipe = new pipe('banner');
+        /**
+         * Plugin type.
+         *
+         * @octdoc  v:banner/$type
+         * @var     int
+         */
+        protected static $type = self::T_FILTER;
+        /**/
+
+        /**
+         * Call object instance as function.
+         *
+         * @octdoc  m:banner/__invoke
+         * @param   array           $args               Arguments.
+         * @return  pipe                                Instance of a pipe.
+         */
+        public function __invoke(array $args)
+        /**/
+        {
+            $pipe = new pipe('banner');
         
-        return $pipe;
+            return $pipe;
+        }
     }
 }

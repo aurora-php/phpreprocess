@@ -21,34 +21,36 @@
  * https://github.com/aurora/phpreprocess
  */
  
-/**
- * Ifdef condition plugin.
- *
- * @octdoc      c:plugins/ifdef
- * @copyright   copyright (c) 2011 by Harald Lapp
- * @author      Harald Lapp <harald@octris.org>
- */
-class ifdef extends plugin
-/**/
-{
+namespace phpreprocess {
     /**
-     * Plugin type.
+     * Ifdef condition plugin.
      *
-     * @octdoc  v:ifdef/$type
-     * @var     int
+     * @octdoc      c:plugins/ifdef
+     * @copyright   copyright (c) 2011 by Harald Lapp
+     * @author      Harald Lapp <harald@octris.org>
      */
-    protected static $type = self::T_CONDITION;
-    /**/
-
-    /**
-     * Call object instance as function.
-     *
-     * @octdoc  m:ifdef/__invoke
-     * @param   array           $args               Arguments.
-     */
-    public function __invoke(array $args)
+    class ifdef extends plugin
     /**/
     {
-        return (!!$args['test']);
+        /**
+         * Plugin type.
+         *
+         * @octdoc  v:ifdef/$type
+         * @var     int
+         */
+        protected static $type = self::T_CONDITION;
+        /**/
+
+        /**
+         * Call object instance as function.
+         *
+         * @octdoc  m:ifdef/__invoke
+         * @param   array           $args               Arguments.
+         */
+        public function __invoke(array $args)
+        /**/
+        {
+            return (!!$args['test']);
+        }
     }
 }

@@ -21,81 +21,83 @@
  * https://github.com/aurora/phpreprocess
  */
  
-require_once(__DIR__ . '/stdlib.class.php');
-require_once(__DIR__ . '/preprocessor.class.php');
-require_once(__DIR__ . '/plugin.class.php');
-require_once(__DIR__ . '/pipe.class.php');
-
-/**
- * Main application class for phpreprocess.
- *
- * @octdoc      c:libs/main
- * @copyright   copyright (c) 2011 by Harald Lapp
- * @author      Harald Lapp <harald@octris.org>
- */
-class main
-/**/
-{
-    /**
-     * Constructor.
-     *
-     * @octdoc  m:main/__construct
-     */
-    public function __construct()
-    /**/
-    {
-    }
+namespace phpreprocess {
+    require_once(__DIR__ . '/stdlib.class.php');
+    require_once(__DIR__ . '/preprocessor.class.php');
+    require_once(__DIR__ . '/plugin.class.php');
+    require_once(__DIR__ . '/pipe.class.php');
 
     /**
-     * Execute application.
+     * Main application class for phpreprocess.
      *
-     * @octdoc  m:main/run
+     * @octdoc      c:libs/main
+     * @copyright   copyright (c) 2011 by Harald Lapp
+     * @author      Harald Lapp <harald@octris.org>
      */
-    public function run()
+    class main
     /**/
     {
-        // parse command-line arguments
-        $missing = array();
-        $options = stdlib::getOptions(array(
-            'p' => stdlib::T_OPT_OPTIONAL | stdlib::T_OPT_NTIMES,
-            'i' => stdlib::T_OPT_REQUIRED
-        ), $missing);
-
-        if (count($missing)) {
-            die("./usage ...\n");
+        /**
+         * Constructor.
+         *
+         * @octdoc  m:main/__construct
+         */
+        public function __construct()
+        /**/
+        {
         }
 
-        if ($options['i'] == '-') {
-            $inp = STDIN; 
-        } elseif (!is_file($options['i']) || !is_readable($options['i'])) {
-            die("no file nor STDIN or file not readable\n");
-        } else {
-            $inp = $options['i'];
-        }
+        /**
+         * Execute application.
+         *
+         * @octdoc  m:main/run
+         */
+        public function run()
+        /**/
+        {
+            // parse command-line arguments
+            $missing = array();
+            $options = stdlib::getOptions(array(
+                'p' => stdlib::T_OPT_OPTIONAL | stdlib::T_OPT_NTIMES,
+                'i' => stdlib::T_OPT_REQUIRED
+            ), $missing);
 
-        $params = array();
-        $tmp    = (isset($options['p'])
-                    ? (!is_array($options['p'])
-                        ? array($options['p'])
-                        : $options['p'])
-                    : array());
-
-        array_walk($tmp, function(&$v) use (&$params) {
-            if (preg_match('/^(?P<plugin>[a-z]+)\.(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
-                extract($m);
-
-                if (!isset($params[$plugin])) $params[$plugin] = array();
-
-                $params[$plugin][$name] = $value;
+            if (count($missing)) {
+                die("./usage ...\n");
             }
-        });
 
-        // setup and process document
-        $info = posix_getpwuid(posix_getuid());
-        preprocessor::addPluginPath($info['dir'] . '/.phpreprocess');
-        preprocessor::setPluginDefaults($params);
+            if ($options['i'] == '-') {
+                $inp = STDIN; 
+            } elseif (!is_file($options['i']) || !is_readable($options['i'])) {
+                die("no file nor STDIN or file not readable\n");
+            } else {
+                $inp = $options['i'];
+            }
 
-        $p = new preprocessor();
-        $p->process($inp);
+            $params = array();
+            $tmp    = (isset($options['p'])
+                        ? (!is_array($options['p'])
+                            ? array($options['p'])
+                            : $options['p'])
+                        : array());
+
+            array_walk($tmp, function(&$v) use (&$params) {
+                if (preg_match('/^(?P<plugin>[a-z]+)\.(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
+                    extract($m);
+
+                    if (!isset($params[$plugin])) $params[$plugin] = array();
+
+                    $params[$plugin][$name] = $value;
+                }
+            });
+
+            // setup and process document
+            $info = posix_getpwuid(posix_getuid());
+            preprocessor::addPluginPath($info['dir'] . '/.phpreprocess');
+            preprocessor::setPluginDefaults($params);
+
+            $p = new preprocessor();
+            $p->process($inp);
+        }
     }
 }

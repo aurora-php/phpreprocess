@@ -18,7 +18,7 @@ if (!class_exists('PHAR')) {
 Phar::mapPhar();
 include 'phar://phpreprocess.phar/main.class.php';
 
-$main = new main();
+$main = new \phpreprocess\main();
 $main->run();
 
 __HALT_COMPILER();
