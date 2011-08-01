@@ -171,6 +171,18 @@ namespace phpreprocess {
         }
     
         /**
+         * Set values of multiple variables.
+         *
+         * @octdoc  m:preprocessor/setVars
+         * @param   array       $vars               Data to store in variables.
+         */
+        public function setVars($vars)
+        /**/
+        {
+            $this->variables = array_merge($this->variables, $vars);
+        }
+    
+        /**
          * Return instance of a plugin.
          *
          * @octdoc  m:preprocessor/getPlugin
