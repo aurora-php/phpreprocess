@@ -21,41 +21,43 @@
  * https://github.com/aurora/phpreprocess
  */
  
-/**
- * This plugins purpose is to insert another document into 
- * the current one.
- *
- * @octdoc      c:plugins/insert
- * @copyright   copyright (c) 2011 by Harald Lapp
- * @author      Harald Lapp <harald@octris.org>
- */
-class insert extends plugin
-/**/
-{
+namespace phpreprocess {
     /**
-     * Plugin type.
+     * This plugins purpose is to insert another document into 
+     * the current one.
      *
-     * @octdoc  v:insert/$type
-     * @var     int
+     * @octdoc      c:plugins/insert
+     * @copyright   copyright (c) 2011 by Harald Lapp
+     * @author      Harald Lapp <harald@octris.org>
      */
-    protected static $type = self::T_FUNCTION;
-    /**/
-
-    /**
-     * Call object instance as function.
-     *
-     * @octdoc  m:insert/__invoke
-     * @param   array           $args               Arguments.
-     */
-    public function __invoke(array $args)
+    class insert extends plugin
     /**/
     {
-        if ($return = (is_file($args['name']) && is_readable($args['name']))) {
-            $return = $this->getPreprocessor()->process($args['name']);
-        } else {
-            $this->error(sprintf('file not found or not readable "%s"', $args['name']));
-        }
+        /**
+         * Plugin type.
+         *
+         * @octdoc  v:insert/$type
+         * @var     int
+         */
+        protected static $type = self::T_FUNCTION;
+        /**/
+
+        /**
+         * Call object instance as function.
+         *
+         * @octdoc  m:insert/__invoke
+         * @param   array           $args               Arguments.
+         */
+        public function __invoke(array $args)
+        /**/
+        {
+            if ($return = (is_file($args['name']) && is_readable($args['name']))) {
+                $return = $this->getPreprocessor()->process($args['name']);
+            } else {
+                $this->error(sprintf('file not found or not readable "%s"', $args['name']));
+            }
         
-        return $return;
+            return $return;
+        }
     }
 }
