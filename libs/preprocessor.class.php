@@ -59,7 +59,7 @@ namespace phpreprocess {
             self::T_COMMAND    => '[a-z]+\(',
             self::T_IDENTIFIER => '-[a-z]+',
             self::T_STRING     => "([\"']).*?(?!\\\\)\\2",
-            self::T_VARIABLE   => '$[a-z_0-9]+',
+            self::T_VARIABLE   => '\$[a-z_0-9]+',
             self::T_ASSIGNMENT => '=>',
             self::T_SEPARATOR  => '\,',
             self::T_WHITESPACE => '\s+',
