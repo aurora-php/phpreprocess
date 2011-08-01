@@ -83,10 +83,11 @@ namespace phpreprocess {
                     $key  = key($new_opt);
                 } else {
                     foreach ($new_opt as $k => $v) {
-                        if (!array_key_exists($k, $options)) continue;              // skip: not defined as allowed
-                        if (isset($opts[$k]) && ($options[$k] & 2 != 2)) continue;  // skip: not allowed multiple times
+                        if (!array_key_exists($k, $options)) continue;                  // skip: not defined as allowed
                     
-                        $opts[$key = $k] = $v;
+                        $opts[$key = $k] = (isset($opts[$k]) && (($options[$k] & 2) == 2)
+                                            ? $opts[$k]
+                                            : $v);
                     }
                 }
             
