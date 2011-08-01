@@ -75,19 +75,26 @@ namespace phpreprocess {
             }
 
             $params = array();
+            $vars   = array();
             $tmp    = (isset($options['p'])
                         ? (!is_array($options['p'])
                             ? array($options['p'])
                             : $options['p'])
                         : array());
 
-            array_walk($tmp, function(&$v) use (&$params) {
-                if (preg_match('/^(?P<plugin>[a-z]+)\.(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
+            array_walk($tmp, function(&$v) use (&$params, &$vars) {
+                if (preg_match('/^(?:(?P<plugin>[a-z]+)\.)?(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
                     extract($m);
 
-                    if (!isset($params[$plugin])) $params[$plugin] = array();
+                    if ($plugin != '') {
+                        // plugin default
+                        if (!isset($params[$plugin])) $params[$plugin] = array();
 
-                    $params[$plugin][$name] = $value;
+                        $params[$plugin][$name] = $value;
+                    } else {
+                        // variable
+                        $vars[$name] = $value;
+                    }
                 }
             });
 
@@ -97,6 +104,7 @@ namespace phpreprocess {
             preprocessor::setPluginDefaults($params);
 
             $p = new preprocessor();
+            $p->setVars($vars);
             $p->process($inp);
         }
     }
