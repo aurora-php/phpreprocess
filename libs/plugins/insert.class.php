@@ -51,9 +51,9 @@ class insert extends plugin
     /**/
     {
         if ($return = (is_file($args['name']) && is_readable($args['name']))) {
-            $return = $this->preprocessor->process($args['name']);
+            $return = $this->getPreprocessor()->process($args['name']);
         } else {
-            $preprocessor->error(sprintf('file not found or not readable "%s"', $args['name']));
+            $this->error(sprintf('file not found or not readable "%s"', $args['name']));
         }
         
         return $return;
