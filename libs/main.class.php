@@ -83,7 +83,7 @@ namespace phpreprocess {
                         : array());
 
             array_walk($tmp, function(&$v) use (&$params, &$vars) {
-                if (preg_match('/^(?:(?P<plugin>[a-z]+)\.)?(?P<name>[a-z]+)=(?P<value>[^ ]+)$/', $v, $m)) {
+                if (preg_match('/^(?:(?P<plugin>[a-z]+)\.)?(?P<name>[a-z_0-9]+)=(?P<value>[^ ]+)$/', $v, $m)) {
                     extract($m);
 
                     if ($plugin != '') {
