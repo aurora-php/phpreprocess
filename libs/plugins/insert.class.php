@@ -51,10 +51,16 @@ namespace phpreprocess {
         public function __invoke(array $args)
         /**/
         {
-            if ($return = (is_file($args['name']) && is_readable($args['name']))) {
-                $return = $this->getPreprocessor()->process($args['name']);
+            $path = (isset($this->defaults['path'])
+                        ? rtrim($this->defaults['path'], '/')
+                        : '');
+            
+            $file = $path . '/' . ltrim($args['name'], '/');
+            
+            if ($return = (is_file($file) && is_readable($file))) {
+                $return = $this->getPreprocessor()->process($file);
             } else {
-                $this->error(sprintf('file not found or not readable "%s"', $args['name']));
+                $this->error(sprintf('file not found or not readable "%s"', $file));
             }
         
             return $return;
