@@ -58,6 +58,9 @@ namespace phpreprocess {
             $dst_format = (isset($this->defaults['dst_format'])
                             ? $this->defaults['dst_format'] . ':'
                             : '');
+            $dst_scale  = (isset($this->defaults['dst_scale'])
+                            ? $this->defaults['dst_scale']
+                            : '');
 
             if ($dst_path == '') {
                 $this->error(
@@ -70,6 +73,8 @@ namespace phpreprocess {
                 $this->error('"type" is a required parameter');
             } elseif (!isset($args['output'])) {
                 $this->error('"output" is a required parameter');
+            } elseif ($dst_scale != '' && !preg_match('/^(\d*x\d+|\d+x\d*)$/', $dst_scale)) {
+                $this->error('wrong scaling parameter');
             } else {
                 $dst_file = $dst_path . '/' . basename($args['output'], '.png') . '.png';
                 
@@ -78,9 +83,10 @@ namespace phpreprocess {
                 }
                 
                 $return = new pipe(sprintf(
-                    'asciidia -t %s -i - -o %s; echo %s',
+                    'asciidia -t %s -i - -o %s %s; echo %s',
                     escapeshellarg($args['type']),
                     escapeshellarg($dst_format . $dst_file),
+                    ($dst_scale != '' ? '-s ' . $dst_scale : ''),
                     escapeshellarg($dst_file)
                 ));
             }
