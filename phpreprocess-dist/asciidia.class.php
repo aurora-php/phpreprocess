@@ -51,34 +51,37 @@ namespace phpreprocess {
         public function __invoke(array $args)
         /**/
         {
-            $return = false;
-            $dest   = (isset($this->defaults['destination'])
-                        ? rtrim($this->defaults['destination'], '/')
-                        : '');
+            $return     = false;
+            $dst_path   = (isset($this->defaults['dst_path'])
+                            ? rtrim($this->defaults['dst_path'], '/')
+                            : '');
+            $dst_format = (isset($this->defaults['dst_format'])
+                            ? $this->defaults['dst_format'] . ':'
+                            : '');
 
-            if ($dest == '') {
+            if ($dst_path == '') {
                 $this->error(
                     'destination directory missing -- make sure to call phpreprocess with
-                    the argument "-p asciidia.destination=..."'
+                    the argument "-p asciidia.dst_path=..."'
                 );
-            } elseif (!is_dir($dest) || !is_writable($dest)) {
+            } elseif (!is_dir($dst_path) || !is_writable($dst_path)) {
                 $this->error('destination is no directory or directory is not writable');
             } elseif (!isset($args['type'])) {
                 $this->error('"type" is a required parameter');
             } elseif (!isset($args['output'])) {
                 $this->error('"output" is a required parameter');
             } else {
-                $dest_file = $dest . '/' . basename($args['output'], '.png') . '.png';
+                $dst_file = $dst_path . '/' . basename($args['output'], '.png') . '.png';
                 
-                if (is_file($dest_file)) {
-                    unlink($dest_file);
+                if (is_file($dst_file)) {
+                    unlink($dst_file);
                 }
                 
                 $return = new pipe(sprintf(
                     'asciidia -t %s -i - -o %s; echo %s',
                     escapeshellarg($args['type']),
-                    escapeshellarg($dest_file),
-                    escapeshellarg($dest_file)
+                    escapeshellarg($dst_format . $dst_file),
+                    escapeshellarg($dst_file)
                 ));
             }
         
