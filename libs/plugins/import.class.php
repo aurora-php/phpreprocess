@@ -23,20 +23,20 @@
  
 namespace phpreprocess {
     /**
-     * This plugins purpose is to insert another document into 
+     * This plugins purpose is to import another document into 
      * the current one.
      *
-     * @octdoc      c:plugins/insert
+     * @octdoc      c:plugins/import
      * @copyright   copyright (c) 2011 by Harald Lapp
      * @author      Harald Lapp <harald@octris.org>
      */
-    class insert extends plugin
+    class import extends plugin
     /**/
     {
         /**
          * Plugin type.
          *
-         * @octdoc  v:insert/$type
+         * @octdoc  v:import/$type
          * @var     int
          */
         protected static $type = self::T_FUNCTION;
@@ -45,7 +45,7 @@ namespace phpreprocess {
         /**
          * Call object instance as function.
          *
-         * @octdoc  m:insert/__invoke
+         * @octdoc  m:import/__invoke
          * @param   array           $args               Arguments.
          */
         public function __invoke(array $args)
@@ -63,7 +63,7 @@ namespace phpreprocess {
                 $this->error(sprintf('file not found or not readable "%s"', $file));
             }
         
-            return $return;
+            return '';
         }
     }
 }
